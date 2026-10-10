@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Misión 2: TEMPERATURA | Proyecto Terraformar Marte</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-blue: #0A192F;
+            --electric-blue: #00F0FF;
+            --deep-cyan: #008B8B;
+            --success-green: #39FF14;
+            --error-red: #FF003C;
+            --white-glow: rgba(255, 255, 255, 0.8);
+        }
+
+        body {
+            background-color: #030a16;
+            color: #e0f2fe;
+            font-family: 'Rajdhani', sans-serif;
+            overflow-x: hidden;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            user-select: none;
+        }
+
+        h1, h2, h3, .font-tech {
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        /* Efecto de líneas de escaneo (Scanlines) */
+        .scanlines {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0,0,0,0.15) 50%, rgba(0,0,0,0.15));
+            background-size: 100% 4px;
+            pointer-events: none;
+            z-index: 100;
+            opacity: 0.6;
+        }
+
+        /* Contenedores con estilo de panel de nave */
+        .glass-panel {
+            background: rgba(10, 25, 47, 0.7);
+            border: 1px solid var(--electric-blue);
+            box-shadow: 0 0 15px rgba(0, 240, 255, 0.15), inset 0 0 20px rgba(0, 240, 255, 0.05);
+            backdrop-filter: blur(5px);
+            position: relative;
+        }
+
+        .glass-panel::before, .glass-panel::after {
+            content: '';
+            position: absolute;
+            width: 15px; height: 15px;
+            border-color: var(--electric-blue);
+            border-style: solid;
+        }
+        .glass-panel::before { top: -1px; left: -1px; border-width: 2px 0 0 2px; }
+        .glass-panel::after { bottom: -1px; right: -1px; border-width: 0 2px 2px 0; }
+
+        /* Botones futuristas */
+        .btn-tech {
+            background: linear-gradient(45deg, transparent 5%, rgba(0, 240, 255, 0.2) 5%);
+            border: 1px solid var(--electric-blue);
+            color: var(--electric-blue);
+            font-family: 'Orbitron', sans-serif;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-tech:hover {
+            background: rgba(0, 240, 255, 0.4);
+            color: #fff;
+            box-shadow: 0 0 20px var(--electric-blue);
+            text-shadow: 0 0 5px #fff;
+        }
+
+        .btn-tech:active { transform: scale(0.98); }
+
+        .btn-green {
+            border-color: var(--success-green);
+            color: var(--success-green);
+            background: linear-gradient(45deg, transparent 5%, rgba(57, 255, 20, 0.1) 5%);
+        }
+        .btn-green:hover {
+            background: rgba(57, 255, 20, 0.3);
+            box-shadow: 0 0 20px var(--success-green);
+        }
+
+        .btn-red {
+            border-color: var(--error-red);
+            color: var(--error-red);
+            background: linear-gradient(45deg, transparent 5%, rgba(255, 0, 60, 0.1) 5%);
+        }
+
+        /* Animaciones */
+        @keyframes pulse-glow {
+            0% { box-shadow: 0 0 5px var(--electric-blue); }
+            50% { box-shadow: 0 0 20px var(--electric-blue); }
+            100% { box-shadow: 0 0 5px var(--electric-blue); }
+        }
+        
+        .anim-pulse { animation: pulse-glow 2s infinite; }
+
+        @keyframes data-flow {
+            0% { stroke-dashoffset: 1000; }
+            100% { stroke-dashoffset: 0; }
+        }
+        .path-flow {
+            stroke-dasharray: 20 10;
+            animation: data-flow 20s linear infinite;
+        }
+
+        /* Ocultar secciones dinámicamente */
+        .hidden-screen { display: none !important; }
+        
+        /* Video Container Mantenimiento de Proporción */
+        .video-wrapper {
+            position: relative;
+            width: 100%;
+            padding-bottom: 56.25%; /* 16:9 Aspect Ratio */
+            background-color: #000;
+            border: 2px solid var(--electric-blue);
+            box-shadow: 0 0 30px rgba(0,240,255,0.3);
+        }
+        .video-wrapper video {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            object-fit: contain;
+        }
+
+        /* Controles térmicos y visuales */
+        .temp-display {
+            font-size: 4rem;
+            text-shadow: 0 0 20px var(--electric-blue);
+            transition: color 0.5s ease, text-shadow 0.5s ease;
+        }
+        .node-circle {
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+        .node-circle:hover { filter: brightness(1.3); }
+
+    </style>
+</head>
+<body class="relative">
+
+    <!-- OVERLAYS: Scanlines y Fondo Gráfico -->
+    <div class="scanlines"></div>
+    <div class="absolute inset-0 z-[-1] pointer-events-none opacity-20 overflow-hidden flex justify-center items-center">
+        <svg width="1200" height="800" viewBox="0 0 1200 800" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="600" cy="400" r="300" fill="none" stroke="#00F0FF" stroke-width="1" opacity="0.3" class="path-flow"/>
+            <circle cx="600" cy="400" r="350" fill="none" stroke="#008B8B" stroke-width="2" stroke-dasharray="10 15"/>
+            <circle cx="600" cy="400" r="200" fill="none" stroke="#00F0FF" stroke-width="1" opacity="0.5"/>
+            <path d="M 0 400 L 1200 400" stroke="#008B8B" stroke-width="1" opacity="0.4" />
+            <path d="M 600 0 L 600 800" stroke="#008B8B" stroke-width="1" opacity="0.4" />
+            <rect x="50" y="50" width="100" height="100" fill="none" stroke="#00F0FF" stroke-width="1" opacity="0.3" />
+            <rect x="1050" y="650" width="100" height="100" fill="none" stroke="#00F0FF" stroke-width="1" opacity="0.3" />
+            <!-- Deco Lines -->
+            <path d="M 100 700 L 300 700 L 350 650 L 500 650" fill="none" stroke="#00F0FF" stroke-width="2" opacity="0.5" class="path-flow"/>
+            <path d="M 1100 100 L 900 100 L 850 150 L 700 150" fill="none" stroke="#00F0FF" stroke-width="2" opacity="0.5" class="path-flow"/>
+        </svg>
+    </div>
+
+    <!-- HUD PERMANENTE -->
+    <header id="main-hud" class="w-full flex justify-between items-center p-4 border-b border-[#008B8B] bg-[#0A192F]/80 backdrop-blur z-40 hidden-screen">
+        <div class="flex items-center gap-4">
+            <svg width="40" height="40" viewBox="0 0 50 50">
+                <polygon points="25,5 45,45 5,45" fill="none" stroke="#00F0FF" stroke-width="2"/>
+                <circle cx="25" cy="30" r="5" fill="#00F0FF" class="anim-pulse"/>
+            </svg>
+            <div>
+                <h1 class="text-xl md:text-2xl font-tech text-white tracking-widest">TERRAFORMAR MARTE</h1>
+                <p class="text-xs text-cyan-400 tracking-[0.2em]">MISIÓN 2: CONTROL DE TEMPERATURA</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-3">
+            <div id="status-indicator" class="text-xs font-bold px-3 py-1 bg-cyan-900/50 border border-cyan-500 rounded text-cyan-300">
+                SISTEMA EN LÍNEA
+            </div>
+            <button id="btn-audio-toggle" class="p-2 border border-cyan-500 rounded text-cyan-400 hover:bg-cyan-900 transition-colors" title="Alternar Música">
+                <svg width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
+                  <path d="M11.536 14.01A8.473 8.473 0 0 0 14.026 8a8.473 8.473 0 0 0-2.49-6.01l-.708.707A7.476 7.476 0 0 1 13.025 8c0 2.071-.84 3.946-2.197 5.303l.708.707z"/>
+                  <path d="M10.121 12.596A6.475 6.475 0 0 0 12.025 8a6.475 6.475 0 0 0-1.904-4.596l-.707.707A5.476 5.476 0 0 1 11.025 8a5.476 5.476 0 0 1-1.61 3.89l.706.706z"/>
+                  <path d="M8.707 11.182A4.475 4.475 0 0 0 10.025 8a4.475 4.475 0 0 0-1.318-3.182L8 5.525A3.475 3.475 0 0 1 9.025 8 3.475 3.475 0 0 1 8 10.475l.707.707zM6.717 3.55A.5.5 0 0 1 7 4v8a.5.5 0 0 1-.812.39L3.825 10.5H1.5A.5.5 0 0 1 1 10V6a.5.5 0 0 1 .5-.5h2.325l2.363-1.89a.5.5 0 0 1 .529-.06z"/>
+                </svg>
+            </button>
+        </div>
+    </header>
+
+    <!-- ÁREA PRINCIPAL -->
+    <main class="flex-1 relative flex items-center justify-center p-4 md:p-8 z-30">
+        
+        <!-- PANTALLA INICIAL (BOOT) -->
+        <div id="screen-boot" class="text-center">
+            <h1 class="text-4xl md:text-6xl font-tech text-white mb-4 drop-shadow-[0_0_10px_#00F0FF]">PROYECTO TERRAFORMAR</h1>
+            <p class="text-lg text-cyan-400 mb-8 font-mono">ESTACIÓN TÉRMICA ARES-2 - ESPERANDO INICIALIZACIÓN</p>
+            <button id="btn-iniciar" class="btn-tech text-xl px-8 py-4 rounded font-bold anim-pulse">
+                INICIAR SISTEMA
+            </button>
+        </div>
+
+        <!-- REPRODUCTOR DE VIDEO (Reutilizable para todos los videos) -->
+        <div id="screen-video" class="hidden-screen w-full max-w-5xl flex flex-col items-center">
+            <div class="w-full flex justify-between items-center mb-2 px-2 text-cyan-400 font-mono text-sm">
+                <span>COMUNICACIÓN ENTRANTE // CANAL ENCRIPTADO</span>
+                <span class="animate-pulse">REC ●</span>
+            </div>
+            <div class="video-wrapper rounded-lg overflow-hidden">
+                <video id="main-video" controls disablePictureInPicture controlsList="nodownload"></video>
+                <!-- Mensaje Fallback de Error -->
+                <div id="video-error-msg" class="absolute inset-0 bg-black flex flex-col items-center justify-center hidden">
+                    <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-red-500 mb-4">
+                        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                        <line x1="12" y1="9" x2="12" y2="13"></line>
+                        <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                    </svg>
+                    <p class="text-white font-tech text-xl mb-2">ERROR DE CONEXIÓN VISUAL</p>
+                    <p class="text-cyan-400 font-mono">Restaurando protocolo de simulación en 3s...</p>
+                </div>
+            </div>
+            <div class="w-full flex justify-end mt-4">
+                <button id="btn-omitir-video" class="btn-tech px-6 py-2 text-sm rounded bg-slate-800">
+                    OMITIR VIDEO &#9193;
+                </button>
+            </div>
+        </div>
+
+        <!-- FASE 1: CALIBRACIÓN DEL REACTOR (TEMPERATURA) -->
+        <div id="screen-phase1" class="hidden-screen w-full max-w-4xl glass-panel p-6 md:p-10 rounded-xl flex flex-col items-center">
+            <h2 class="text-3xl font-tech text-white mb-2 text-center">NÚCLEO TÉRMICO PRINCIPAL</h2>
+            <p class="text-cyan-300 font-mono mb-8 text-center text-sm md:text-base">
+                OBJETIVO: Alcanzar la temperatura óptima de terraformación para descongelar los acuíferos subterráneos.
+                <br>TEMPERATURA REQUERIDA: <span class="text-white font-bold px-2 py-1 bg-cyan-900 rounded">+15 °C</span>
+            </p>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 w-full items-center mb-10">
+                <!-- Data Izquierda -->
+                <div class="flex flex-col gap-4 font-mono text-xs md:text-sm text-cyan-400 order-2 md:order-1">
+                    <div class="bg-slate-800/80 p-3 rounded border border-cyan-800">
+                        <p>PRESIÓN ATMOSFÉRICA: <span class="text-white">610 Pa</span></p>
+                    </div>
+                    <div class="bg-slate-800/80 p-3 rounded border border-cyan-800">
+                        <p>ESTADO DEL NÚCLEO: <span class="text-yellow-400">INESTABLE</span></p>
+                    </div>
+                </div>
+
+                <!-- Display Central -->
+                <div class="flex flex-col items-center justify-center order-1 md:order-2">
+                    <div class="relative flex items-center justify-center w-48 h-48 md:w-64 md:h-64 rounded-full border-4 border-cyan-500 bg-slate-900 shadow-[0_0_30px_rgba(0,240,255,0.2)]">
+                        <!-- Círculos decorativos SVG -->
+                        <svg class="absolute inset-0 w-full h-full animate-spin-slow" viewBox="0 0 100 100" style="animation-duration: 20s;">
+                            <circle cx="50" cy="50" r="45" fill="none" stroke="#00F0FF" stroke-width="1" stroke-dasharray="10 5" opacity="0.5"/>
+                        </svg>
+                        <div id="display-temp" class="temp-display text-white font-tech font-bold z-10">-50°</div>
+                    </div>
+                </div>
+
+                <!-- Controles Derecha -->
+                <div class="grid grid-cols-2 gap-3 order-3">
+                    <button class="btn-tech text-lg py-3 rounded" onclick="Game.modificarTemp(-10)">-10°</button>
+                    <button class="btn-tech text-lg py-3 rounded" onclick="Game.modificarTemp(-1)">-1°</button>
+                    <button class="btn-tech text-lg py-3 rounded" onclick="Game.modificarTemp(1)">+1°</button>
+                    <button class="btn-tech text-lg py-3 rounded" onclick="Game.modificarTemp(10)">+10°</button>
+                </div>
+            </div>
+
+            <button onclick="Game.validarFase1()" class="btn-tech px-10 py-4 text-xl rounded-lg font-bold w-full max-w-sm">
+                INICIAR CALIBRACIÓN
+            </button>
+        </div>
+
+        <!-- FASE 2: CONEXIÓN TÉRMICA -->
+        <div id="screen-phase2" class="hidden-screen w-full max-w-4xl glass-panel p-6 md:p-10 rounded-xl flex flex-col items-center">
+            <h2 class="text-3xl font-tech text-white mb-2 text-center">RED DE DISTRIBUCIÓN TÉRMICA</h2>
+            <p class="text-cyan-300 font-mono mb-8 text-center text-sm md:text-base">
+                El núcleo está activo. Ahora debes alinear los nodos de distribución para enviar la energía.
+                <br>Haz clic en los nodos para ajustar su polaridad. <span class="text-white bg-cyan-900 px-2 py-1 rounded">Secuencia Requerida: AZUL - VERDE - AZUL</span>
+            </p>
+
+            <div class="relative w-full max-w-2xl h-64 md:h-80 bg-slate-900/80 border border-cyan-800 rounded-lg mb-10 flex items-center justify-center overflow-hidden">
+                <!-- Cables conectores SVG (Fondo) -->
+                <svg class="absolute inset-0 w-full h-full z-0" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M 0 50% L 20% 50%" stroke="#333" stroke-width="4" id="wire-in"/>
+                    <path d="M 20% 50% L 50% 25%" stroke="#333" stroke-width="4" id="wire-1"/>
+                    <path d="M 20% 50% L 50% 50%" stroke="#333" stroke-width="4" id="wire-2"/>
+                    <path d="M 20% 50% L 50% 75%" stroke="#333" stroke-width="4" id="wire-3"/>
+                    <path d="M 50% 25% L 80% 50%" stroke="#333" stroke-width="4" id="wire-out-1"/>
+                    <path d="M 50% 50% L 80% 50%" stroke="#333" stroke-width="4" id="wire-out-2"/>
+                    <path d="M 50% 75% L 80% 50%" stroke="#333" stroke-width="4" id="wire-out-3"/>
+                    <path d="M 80% 50% L 100% 50%" stroke="#333" stroke-width="4" id="wire-out"/>
+                </svg>
+
+                <!-- Nodos interactivos -->
+                <div class="absolute w-full h-full z-10 flex items-center justify-center">
+                    <!-- Nodo 1 (Arriba) -->
+                    <div class="absolute" style="left: 50%; top: 25%; transform: translate(-50%, -50%);">
+                        <svg class="node-circle" width="60" height="60" viewBox="0 0 60 60" onclick="Game.toggleNode(1)">
+                            <circle cx="30" cy="30" r="25" fill="#1e293b" stroke="#475569" stroke-width="4" id="node-1-svg"/>
+                            <text x="30" y="35" font-family="Orbitron" font-size="14" fill="#fff" text-anchor="middle">N1</text>
+                        </svg>
+                    </div>
+                    <!-- Nodo 2 (Medio) -->
+                    <div class="absolute" style="left: 50%; top: 50%; transform: translate(-50%, -50%);">
+                        <svg class="node-circle" width="60" height="60" viewBox="0 0 60 60" onclick="Game.toggleNode(2)">
+                            <circle cx="30" cy="30" r="25" fill="#1e293b" stroke="#475569" stroke-width="4" id="node-2-svg"/>
+                            <text x="30" y="35" font-family="Orbitron" font-size="14" fill="#fff" text-anchor="middle">N2</text>
+                        </svg>
+                    </div>
+                    <!-- Nodo 3 (Abajo) -->
+                    <div class="absolute" style="left: 50%; top: 75%; transform: translate(-50%, -50%);">
+                        <svg class="node-circle" width="60" height="60" viewBox="0 0 60 60" onclick="Game.toggleNode(3)">
+                            <circle cx="30" cy="30" r="25" fill="#1e293b" stroke="#475569" stroke-width="4" id="node-3-svg"/>
+                            <text x="30" y="35" font-family="Orbitron" font-size="14" fill="#fff" text-anchor="middle">N3</text>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <button onclick="Game.validarFase2()" class="btn-tech px-10 py-4 text-xl rounded-lg font-bold w-full max-w-sm">
+                ESTABLECER CONEXIÓN
+            </button>
+        </div>
+
+        <!-- PANTALLA FINAL (HUB) -->
+        <div id="screen-end" class="hidden-screen text-center glass-panel p-10 rounded-xl max-w-2xl">
+            <svg class="mx-auto mb-6" width="100" height="100" viewBox="0 0 100 100">
+                <circle cx="50" cy="50" r="45" fill="none" stroke="#39FF14" stroke-width="5" stroke-dasharray="280" stroke-dashoffset="280">
+                    <animate attributeName="stroke-dashoffset" to="0" dur="1s" fill="freeze" />
+                </circle>
+                <path d="M 30 50 L 45 65 L 75 35" fill="none" stroke="#39FF14" stroke-width="5" stroke-dasharray="100" stroke-dashoffset="100">
+                    <animate attributeName="stroke-dashoffset" to="0" dur="0.5s" begin="1s" fill="freeze" />
+                </path>
+            </svg>
+            <h1 class="text-4xl md:text-5xl font-tech text-white mb-4 drop-shadow-[0_0_10px_#39FF14]">MISIÓN COMPLETADA</h1>
+            <p class="text-lg text-cyan-400 mb-8 font-mono">
+                La temperatura del planeta ha comenzado a elevarse. El hielo subterráneo se está fundiendo.
+                Los protocolos de terraformación avanzan según lo esperado.
+            </p>
+            <button onclick="Game.irAlHub()" class="btn-green text-xl px-10 py-4 rounded font-bold anim-pulse">
+                VOLVER AL CENTRO DE MANDO
+            </button>
+        </div>
+
+    </main>
+
+    <!-- Audio de Fondo (BGM) -->
+    <audio id="bgm-audio" loop preload="auto"></audio>
+
+    <script>
+        // ==========================================
+        // 1. CONFIGURACIÓN DE RECURSOS (CONSTANTES)
+        // ==========================================
+        const RECURSOS = {
+            VIDEO_INTRO: "https://fabiolachr.github.io/CosasVarias/CumpleAlex2026/Videos/M2_PRESENTACION_XimenaRueda.mp4",
+            AUDIO_BGM: "https://fabiolachr.github.io/CosasVarias/CumpleAlex2026/Audio/Musica_exito_Clearance_For_Departure.mp3",
+            VIDEO_CAL_MAL: "https://fabiolachr.github.io/CosasVarias/CumpleAlex2026/Videos/M2_FASE1_INCORRECTA_XimenaRueda.mp4",
+            VIDEO_CAL_BIEN: "https://fabiolachr.github.io/CosasVarias/CumpleAlex2026/Videos/M2_FASE1_CORRECTA_XimenaRueda.mp4",
+            VIDEO_CONEXION_MAL: "https://fabiolachr.github.io/CosasVarias/CumpleAlex2026/Videos/M2_FASE2_INCORRECTA_XimenaRueda.mp4",
+            // CONSTANTE REQUERIDA (Completada con el video final)
+            VIDEO_CONEXION_EXITOSA: "https://fabiolachr.github.io/CosasVarias/CumpleAlex2026/Videos/M2_CONCLUSIONi_XimenaRueda.mov", 
+            URL_HUB: "https://fabiolachr.github.io/CosasVarias/CumpleAlex2026/HUB.html"
+        };
+
+        // ==========================================
+        // 2. SISTEMA CENTRAL DE AUDIO Y VIDEO
+        // ==========================================
+        class MediaManager {
+            constructor() {
+                this.bgm = document.getElementById('bgm-audio');
+                this.bgm.src = RECURSOS.AUDIO_BGM;
+                this.bgm.volume = 0.4;
+                
+                this.videoPlayer = document.getElementById('main-video');
+                this.videoScreen = document.getElementById('screen-video');
+                this.videoErrorMsg = document.getElementById('video-error-msg');
+                this.btnOmitir = document.getElementById('btn-omitir-video');
+                
+                this.isPlayingBGM = false;
+                this.currentVideoCallback = null;
+                this.isMusicEnabledByUser = true;
+
+                this.bindEvents();
+            }
+
+            bindEvents() {
+                // Eventos del reproductor de video
+                this.videoPlayer.addEventListener('ended', () => this.finalizarVideo());
+                this.videoPlayer.addEventListener('error', (e) => this.handleVideoError(e));
+                
+                // Botón omitir
+                this.btnOmitir.addEventListener('click', () => this.finalizarVideo());
+
+                // Botón de HUD para mutear/desmutear
+                document.getElementById('btn-audio-toggle').addEventListener('click', () => {
+                    this.isMusicEnabledByUser = !this.isMusicEnabledByUser;
+                    if (this.isMusicEnabledByUser && this.isPlayingBGM) {
+                        this.bgm.play().catch(e => console.log("Audio play blocked", e));
+                    } else {
+                        this.bgm.pause();
+                    }
+                    this.updateAudioButtonIcon();
+                });
+            }
+
+            updateAudioButtonIcon() {
+                const btn = document.getElementById('btn-audio-toggle');
+                if (this.isMusicEnabledByUser) {
+                    btn.innerHTML = `<svg width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
+                        <path d="M11.536 14.01A8.473 8.473 0 0 0 14.026 8a8.473 8.473 0 0 0-2.49-6.01l-.708.707A7.476 7.476 0 0 1 13.025 8c0 2.071-.84 3.946-2.197 5.303l.708.707z"/>
+                        <path d="M10.121 12.596A6.475 6.475 0 0 0 12.025 8a6.475 6.475 0 0 0-1.904-4.596l-.707.707A5.476 5.476 0 0 1 11.025 8a5.476 5.476 0 0 1-1.61 3.89l.706.706z"/>
+                        <path d="M8.707 11.182A4.475 4.475 0 0 0 10.025 8a4.475 4.475 0 0 0-1.318-3.182L8 5.525A3.475 3.475 0 0 1 9.025 8 3.475 3.475 0 0 1 8 10.475l.707.707zM6.717 3.55A.5.5 0 0 1 7 4v8a.5.5 0 0 1-.812.39L3.825 10.5H1.5A.5.5 0 0 1 1 10V6a.5.5 0 0 1 .5-.5h2.325l2.363-1.89a.5.5 0 0 1 .529-.06z"/>
+                    </svg>`;
+                    btn.classList.remove('text-red-500', 'border-red-500');
+                    btn.classList.add('text-cyan-400', 'border-cyan-500');
+                } else {
+                    btn.innerHTML = `<svg width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
+                        <path d="M6.717 3.55A.5.5 0 0 1 7 4v8a.5.5 0 0 1-.812.39L3.825 10.5H1.5A.5.5 0 0 1 1 10V6a.5.5 0 0 1 .5-.5h2.325l2.363-1.89a.5.5 0 0 1 .529-.06zm7.137 2.096a.5.5 0 0 1 0 .708L12.207 8l1.647 1.646a.5.5 0 0 1-.708.708L11.5 8.707l-1.646 1.647a.5.5 0 0 1-.708-.708L10.793 8 9.146 6.354a.5.5 0 1 1 .708-.708L11.5 7.293l1.646-1.647a.5.5 0 0 1 .708 0z"/>
+                    </svg>`;
+                    btn.classList.remove('text-cyan-400', 'border-cyan-500');
+                    btn.classList.add('text-red-500', 'border-red-500');
+                }
+            }
+
+            iniciarMusica() {
+                this.isPlayingBGM = true;
+                if (this.isMusicEnabledByUser) {
+                    this.bgm.play().catch(e => console.log("Navegador bloqueó BGM inicial:", e));
+                }
+            }
+
+            pausarMusica() {
+                this.bgm.pause();
+            }
+
+            reanudarMusica() {
+                if (this.isPlayingBGM && this.isMusicEnabledByUser) {
+                    this.bgm.play().catch(e => console.log("Navegador bloqueó reanudación BGM:", e));
+                }
+            }
+
+            reproducirVideo(url, callback) {
+                // Ocultar la pantalla actual
+                Game.hideAllScreens();
+                
+                // Configurar callback
+                this.currentVideoCallback = callback;
+                
+                // Pausar música de fondo (Regla B2)
+                this.pausarMusica();
+
+                // Mostrar contenedor de video
+                this.videoScreen.classList.remove('hidden-screen');
+                this.videoErrorMsg.classList.add('hidden');
+
+                // Verificación de seguridad para la constante pendiente (VIDEO_CONEXION_EXITOSA)
+                if (url === "VIDEO_CONEXION_EXITOSA" || !url.startsWith("http")) {
+                    console.warn("URL de video no es válida o es el placeholder. Simulando reproducción.");
+                    this.simularVideo(3000);
+                    return;
+                }
+
+                // Cargar y reproducir
+                this.videoPlayer.src = url;
+                this.videoPlayer.load();
+                const playPromise = this.videoPlayer.play();
+                
+                if (playPromise !== undefined) {
+                    playPromise.catch(error => {
+                        console.error("Error al reproducir el video:", error);
+                        this.handleVideoError();
+                    });
+                }
+            }
+
+            handleVideoError(e) {
+                console.error("No se pudo cargar el video.", e);
+                this.videoErrorMsg.classList.remove('hidden');
+                // Si el video falla de verdad, saltarlo después de 3s para no bloquear el juego
+                setTimeout(() => {
+                    if (!this.videoScreen.classList.contains('hidden-screen')) {
+                        this.finalizarVideo();
+                    }
+                }, 3000);
+            }
+
+            simularVideo(duracion) {
+                // Muestra un mensaje holográfico en lugar del video si la URL falta
+                this.videoErrorMsg.innerHTML = `
+                    <div class="animate-pulse flex flex-col items-center">
+                        <svg width="50" height="50" viewBox="0 0 24 24" fill="none" stroke="#00F0FF" stroke-width="2" class="mb-4">
+                            <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
+                        </svg>
+                        <p class="text-cyan-400 font-tech text-xl">PROCESANDO TRANSMISIÓN DATOS...</p>
+                        <p class="text-cyan-600 font-mono text-sm mt-2">[Simulación temporal de video]</p>
+                    </div>
+                `;
+                this.videoErrorMsg.classList.remove('hidden');
+                
+                setTimeout(() => {
+                    // Restaurar el DOM original del error si es necesario
+                    this.videoErrorMsg.innerHTML = `
+                        <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-red-500 mb-4">
+                            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                            <line x1="12" y1="9" x2="12" y2="13"></line>
+                            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                        </svg>
+                        <p class="text-white font-tech text-xl mb-2">ERROR DE CONEXIÓN VISUAL</p>
+                        <p class="text-cyan-400 font-mono">Restaurando protocolo de simulación en 3s...</p>
+                    `;
+                    this.finalizarVideo();
+                }, duracion);
+            }
+
+            finalizarVideo() {
+                // Detener video y evitar que siga cargando
+                this.videoPlayer.pause();
+                this.videoPlayer.removeAttribute('src'); // Forzar detención
+                this.videoPlayer.load();
+
+                // Ocultar pantalla
+                this.videoScreen.classList.add('hidden-screen');
+
+                // Reanudar música (Regla B3)
+                this.reanudarMusica();
+
+                // Ejecutar callback
+                if (this.currentVideoCallback) {
+                    const callback = this.currentVideoCallback;
+                    this.currentVideoCallback = null;
+                    callback();
+                }
+            }
+        }
+
+        // ==========================================
+        // 3. LÓGICA DEL JUEGO Y PUZZLES
+        // ==========================================
+        const Game = {
+            audioMedia: null,
+            
+            // Estado Fase 1
+            tempActual: -50,
+            tempObjetivo: 15,
+            
+            // Estado Fase 2 (Colores: 0=Rojo/Desc, 1=Verde, 2=Azul, 3=Amarillo)
+            // Objetivo pedido visualmente: AZUL(2) - VERDE(1) - AZUL(2)
+            nodos: [0, 0, 0], 
+            coloresNodos: [
+                { hex: '#ef4444', name: 'ROJO' },   // 0
+                { hex: '#39FF14', name: 'VERDE' },  // 1
+                { hex: '#00F0FF', name: 'AZUL' },   // 2
+                { hex: '#eab308', name: 'AMARILLO'} // 3
+            ],
+            solucionNodos: [2, 1, 2],
+
+            init() {
+                this.audioMedia = new MediaManager();
+                document.getElementById('btn-iniciar').addEventListener('click', () => this.startExperience());
+                this.actualizarUIFase1();
+                this.actualizarUIFase2();
+            },
+
+            hideAllScreens() {
+                const screens = ['screen-boot', 'screen-video', 'screen-phase1', 'screen-phase2', 'screen-end'];
+                screens.forEach(id => {
+                    const el = document.getElementById(id);
+                    if(el) el.classList.add('hidden-screen');
+                });
+            },
+
+            startExperience() {
+                // Captura primer interacción
+                document.getElementById('btn-iniciar').innerText = "CONECTANDO...";
+                
+                // Mostrar Video de Introducción
+                this.audioMedia.reproducirVideo(RECURSOS.VIDEO_INTRO, () => {
+                    // Al finalizar u omitir el intro
+                    document.getElementById('main-hud').classList.remove('hidden-screen');
+                    this.audioMedia.iniciarMusica(); // Regla B1
+                    this.mostrarFase1();
+                });
+            },
+
+            // --- LÓGICA FASE 1 (TEMPERATURA) ---
+            mostrarFase1() {
+                this.hideAllScreens();
+                document.getElementById('screen-phase1').classList.remove('hidden-screen');
+                this.actualizarUIFase1();
+            },
+
+            modificarTemp(valor) {
+                this.tempActual += valor;
+                // Límites lógicos para no romper el termómetro visual
+                if (this.tempActual < -100) this.tempActual = -100;
+                if (this.tempActual > 100) this.tempActual = 100;
+                this.actualizarUIFase1();
+            },
+
+            actualizarUIFase1() {
+                const display = document.getElementById('display-temp');
+                display.innerText = `${this.tempActual > 0 ? '+' : ''}${this.tempActual}°`;
+                
+                // Cambiar color basado en cercanía (Visual feedback)
+                if (this.tempActual === this.tempObjetivo) {
+                    display.style.color = 'var(--success-green)';
+                    display.style.textShadow = '0 0 20px var(--success-green)';
+                } else if (Math.abs(this.tempActual - this.tempObjetivo) <= 10) {
+                    display.style.color = '#fbbf24'; // Amarillo/Advertencia
+                    display.style.textShadow = '0 0 20px #fbbf24';
+                } else {
+                    display.style.color = '#fff';
+                    display.style.textShadow = '0 0 20px var(--electric-blue)';
+                }
+            },
+
+            validarFase1() {
+                if (this.tempActual === this.tempObjetivo) {
+                    // Correcto
+                    document.getElementById('status-indicator').innerText = "NÚCLEO ESTABILIZADO";
+                    document.getElementById('status-indicator').className = "text-xs font-bold px-3 py-1 bg-green-900/50 border border-green-500 rounded text-green-400";
+                    
+                    this.audioMedia.reproducirVideo(RECURSOS.VIDEO_CAL_BIEN, () => {
+                        this.mostrarFase2();
+                    });
+                } else {
+                    // Incorrecto
+                    this.audioMedia.reproducirVideo(RECURSOS.VIDEO_CAL_MAL, () => {
+                        // Resetea y vuelve a intentar
+                        this.tempActual = -50;
+                        this.mostrarFase1();
+                    });
+                }
+            },
+
+            // --- LÓGICA FASE 2 (CONEXIÓN) ---
+            mostrarFase2() {
+                this.hideAllScreens();
+                document.getElementById('screen-phase2').classList.remove('hidden-screen');
+            },
+
+            toggleNode(index) {
+                const arrayIndex = index - 1;
+                // Rotar estado: 0 -> 1 -> 2 -> 3 -> 0
+                this.nodos[arrayIndex] = (this.nodos[arrayIndex] + 1) % this.coloresNodos.length;
+                this.actualizarUIFase2();
+            },
+
+            actualizarUIFase2() {
+                for(let i = 0; i < 3; i++) {
+                    const circle = document.getElementById(`node-${i+1}-svg`);
+                    const wireOut = document.getElementById(`wire-out-${i+1}`);
+                    const colorHex = this.coloresNodos[this.nodos[i]].hex;
+                    
+                    if(circle) circle.setAttribute('stroke', colorHex);
+                    if(wireOut) {
+                        wireOut.setAttribute('stroke', this.nodos[i] !== 0 ? colorHex : '#333');
+                        if(this.nodos[i] !== 0) {
+                            wireOut.classList.add('path-flow');
+                        } else {
+                            wireOut.classList.remove('path-flow');
+                        }
+                    }
+                }
+            },
+
+            validarFase2() {
+                const isValid = this.nodos[0] === this.solucionNodos[0] && 
+                                this.nodos[1] === this.solucionNodos[1] && 
+                                this.nodos[2] === this.solucionNodos[2];
+
+                if (isValid) {
+                    // Éxito
+                    document.getElementById('status-indicator').innerText = "RED CONECTADA";
+                    
+                    this.audioMedia.reproducirVideo(RECURSOS.VIDEO_CONEXION_EXITOSA, () => {
+                        this.mostrarFinal();
+                    });
+                } else {
+                    // Fallo
+                    this.audioMedia.reproducirVideo(RECURSOS.VIDEO_CONEXION_MAL, () => {
+                        this.mostrarFase2();
+                    });
+                }
+            },
+
+            // --- FINAL ---
+            mostrarFinal() {
+                this.hideAllScreens();
+                document.getElementById('screen-end').classList.remove('hidden-screen');
+                // Al llegar al final, podemos detener o dejar la música. La dejaremos para ambiente.
+            },
+
+            irAlHub() {
+                window.location.href = RECURSOS.URL_HUB;
+            }
+        };
+
+        // Iniciar todo cuando el DOM esté listo
+        window.addEventListener('DOMContentLoaded', () => {
+            Game.init();
+        });
+
+    </script>
+</body>
+</html>
