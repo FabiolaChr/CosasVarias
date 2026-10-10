@@ -110,33 +110,6 @@
 </head>
 <body class="min-h-screen flex items-center justify-center p-4 relative overflow-x-hidden bg-grid">
 
-  <!-- Overlay Video Introductorio Fullscreen Sci-Fi -->
-  <div id="intro-overlay" class="fixed inset-0 z-50 bg-slate-950 flex flex-col items-center justify-center p-4 transition-opacity duration-700">
-    <!-- Pantalla de inicio de transmisión -->
-    <div id="intro-start-screen" class="text-center z-10 flex flex-col items-center">
-      <div class="p-4 bg-cyan-950/60 border border-cyan-500/50 rounded-full mb-4 animate-bounce text-cyan-400 glow-cyan">
-        <i data-lucide="play" class="w-10 h-10"></i>
-      </div>
-      <h2 class="text-2xl font-orbitron font-bold text-white mb-2 tracking-widest glow-cyan-text">TRANSMISIÓN ENTRANTE</h2>
-      <p class="text-cyan-300 font-orbitron text-sm mb-6 tracking-wider">SISTEMA DE SEGURIDAD NAVE ESPACIAL</p>
-      <button onclick="startIntro()" class="bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-orbitron font-bold px-8 py-3 rounded-lg border border-cyan-300 transition-all active:scale-95 shadow-[0_0_20px_rgba(6,182,212,0.6)]">
-        INICIAR TRANSMISIÓN
-      </button>
-    </div>
-
-    <!-- Video Introductorio Pantalla Completa -->
-    <div id="intro-video-container" class="hidden w-full h-full relative flex items-center justify-center">
-      <video id="intro-video" class="w-full h-full object-cover" playsinline>
-        <source id="intro-video-source" src="https://fabiolachr.github.io/CosasVarias/CumpleAlex2026/Videos/M1_PRESENTACION_XimenaRueda.mp4" type="video/mp4">
-        Tu navegador no soporta la reproducción de video.
-      </video>
-      <!-- Botón Omitir/Saltar -->
-      <button onclick="closeIntro()" class="absolute top-6 right-6 bg-slate-900/80 hover:bg-cyan-950 text-cyan-300 border border-cyan-500/50 px-4 py-2 rounded-lg font-orbitron text-xs font-bold transition-all active:scale-95 flex items-center gap-2 z-20 backdrop-blur-md">
-        OMITIR TRANSMISIÓN <i data-lucide="skip-forward" class="w-4 h-4"></i>
-      </button>
-    </div>
-  </div>
-
   <!-- Escaneo Visual -->
   <div class="scanline"></div>
 
@@ -232,36 +205,8 @@
 
     // Constantes de Configuración
     const CORRECT_PIN = "3435";
-    const VIDEO_INTRO = "https://fabiolachr.github.io/CosasVarias/CumpleAlex2026/Videos/M1_PRESENTACION_XimenaRueda.mp4";
     const VIDEO_CORRECT = "https://fabiolachr.github.io/CosasVarias/CumpleAlex2026/Videos/M1_CORRECTO_XimenaRueda.mp4";
     const VIDEO_INCORRECT = "https://fabiolachr.github.io/CosasVarias/CumpleAlex2026/Videos/M1_INCORRECTO_XimenaRueda.mp4";
-
-    // Elementos del Video Introductorio
-    const introOverlay = document.getElementById('intro-overlay');
-    const introStartScreen = document.getElementById('intro-start-screen');
-    const introVideoContainer = document.getElementById('intro-video-container');
-    const introVideo = document.getElementById('intro-video');
-
-    function startIntro() {
-      introStartScreen.classList.add('hidden');
-      introVideoContainer.classList.remove('hidden');
-      introVideo.play().catch(e => {
-        console.log("Error al reproducir el video de presentación:", e);
-        closeIntro();
-      });
-    }
-
-    introVideo.addEventListener('ended', () => {
-      closeIntro();
-    });
-
-    function closeIntro() {
-      introVideo.pause();
-      introOverlay.classList.add('opacity-0', 'pointer-events-none');
-      setTimeout(() => {
-        introOverlay.classList.add('hidden');
-      }, 700);
-    }
 
     // Variables de Estado
     let currentPin = "";
@@ -278,6 +223,29 @@
     const videoSource = document.getElementById('video-source');
     const statusTag = document.getElementById('status-tag');
     const containerCard = document.querySelector('.max-w-md');
+
+    // Registrar Misión Completada en LocalStorage
+    function registrarMisionCompletada() {
+      const KEY = 'terraformacionMarte';
+      let estadoActual = { oxigeno: false, temperatura: false, agua: false, victoriaMostrada: false };
+      
+      try {
+        const guardado = localStorage.getItem(KEY);
+        if (guardado) {
+          estadoActual = { ...estadoActual, ...JSON.parse(guardado) };
+        }
+      } catch (e) {
+        console.error("Error al leer localStorage", e);
+      }
+
+      estadoActual.oxigeno = true;
+
+      try {
+        localStorage.setItem(KEY, JSON.stringify(estadoActual));
+      } catch (e) {
+        console.error("Error al guardar en localStorage", e);
+      }
+    }
 
     // Manejar ingreso de dígitos
     function pressKey(num) {
@@ -300,7 +268,7 @@
       messageText.className = "text-sm font-orbitron text-cyan-400/80 tracking-widest min-h-[20px] text-center";
     }
 
-    // Actualizar pantalla de dígitos
+    // Actualizar pantalla de dígitos (Mostrando los números explícitamente)
     function updateDisplay() {
       pinDigits.forEach((digitEl, index) => {
         if (index < currentPin.length) {
@@ -321,6 +289,7 @@
 
       if (currentPin === CORRECT_PIN) {
         // ACCESO CORRECTO
+        registrarMisionCompletada();
         messageText.textContent = "¡ACCESO CONCEDIDO!";
         messageText.className = "text-sm font-orbitron text-emerald-400 font-bold tracking-widest min-h-[20px] text-center";
         statusTag.textContent = "PERMITIDO";
@@ -337,70 +306,4 @@
       } else {
         // ACCESO INCORRECTO
         messageText.textContent = "¡DENEGADO! CLAVE ERRÓNEA";
-        messageText.className = "text-sm font-orbitron text-red-500 font-bold tracking-widest min-h-[20px] text-center animate-bounce";
-        statusTag.textContent = "ALERTA";
-        statusTag.className = "text-red-500 font-bold";
-
-        // Estilos Neón Rojo
-        containerCard.classList.remove('glow-cyan');
-        containerCard.classList.add('glow-red');
-
-        // Efecto visual de error
-        pinDigits.forEach(el => {
-          el.classList.add('border-red-500', 'text-red-500', 'bg-red-950/40');
-        });
-
-        setTimeout(() => {
-          showMedia(VIDEO_INCORRECT);
-        }, 600);
-      }
-    }
-
-    // Mostrar el Video MP4 resultante
-    function showMedia(url) {
-      videoSource.src = url;
-      statusVideo.load();
-      statusVideo.play().catch(e => console.log("Error al reproducir video:", e));
-
-      pinDisplayView.classList.add('hidden');
-      mediaView.classList.remove('hidden');
-    }
-
-    // Reiniciar la App al estado inicial
-    function resetApp() {
-      currentPin = "";
-      isLocked = false;
-
-      // Detener video
-      statusVideo.pause();
-      videoSource.src = "";
-
-      // Resetear interfaz
-      pinDisplayView.classList.remove('hidden');
-      mediaView.classList.add('hidden');
-
-      statusTag.textContent = "ESPERA";
-      statusTag.className = "text-cyan-400";
-
-      messageText.textContent = "ESPERANDO PINES DE ACCESO...";
-      messageText.className = "text-sm font-orbitron text-cyan-400/80 tracking-widest min-h-[20px] text-center";
-
-      containerCard.classList.remove('glow-green', 'glow-red');
-      containerCard.classList.add('glow-cyan');
-
-      updateDisplay();
-    }
-
-    // Soporte para Teclado Físico (Teclas 0-9, Backspace, Escape)
-    document.addEventListener('keydown', (e) => {
-      if (e.key >= '0' && e.key <= '9') {
-        pressKey(e.key);
-      } else if (e.key === 'Backspace') {
-        clearPin();
-      } else if (e.key === 'Escape') {
-        resetApp();
-      }
-    });
-  </script>
-</body>
-</html>
+        messageText.className = "text-sm font-orbitron text-red-500 font-bold tracking-widest min-
